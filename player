@@ -1,0 +1,148 @@
+using System.Collections;
+using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+    [Header("Configuración de movimiento")]
+    public bool carriles = false;
+    public bool autoPilot = false;
+    [HideInInspector] public float[] posCarriles;
+    [SerializeField] private int cantCarriles = 3;
+    [SerializeField] private float movementDistance = 6.0f;
+
+    public float playerPosition;
+    [SerializeField] private float limitY = -3.5f;
+    [SerializeField] private float limitX = 8.10f;
+    [HideInInspector] public float speed = 8;
+    [SerializeField] private bool puedeVolar = false;
+
+    [Header("Configuración de vida")]
+    [HideInInspector] public int life = 3;
+    [HideInInspector] public bool inmunity = false;
+
+    [Header("Configuración de municiones")]
+    [SerializeField] private GameObject[] bullets;
+    [SerializeField] private int bulletType = 0;
+    [SerializeField] private float fireRate = 0.5f;
+    [SerializeField] private bool canShoot = true;
+
+    [Header("Configuración generales")]
+    [SerializeField] private Configuracion_General config;
+
+    private void Start()
+    {
+        life = config.vidas;
+        speed = config.velocidad;
+
+        if (carriles)
+        {
+            posCarriles = cantCarriles == 2 ? new float[3] { -movementDistance, 0, movementDistance } : new float[2] { -movementDistance, movementDistance };
+            if (cantCarriles != 2 && cantCarriles != 3)
+            {
+                Debug.LogWarning("El número de carriles permitido es 2 o 3.");
+            }
+        }
+    }
+
+    private void Update()
+    {
+        Movement();
+        Shoot();
+    }
+
+    private void Movement()
+    {
+        if (carriles)
+        {
+            HandleCarrilesMovement();
+        }
+        else
+        {
+            HandleFreeMovement();
+        }
+
+        if (autoPilot)
+        {
+            transform.Translate(Vector3.forward * speed * Time.deltaTime);
+            Debug.Log(speed);
+        }
+    }
+
+    private void HandleCarrilesMovement()
+    {
+        float playerPosition = transform.position.x;
+        if (Input.GetKeyDown(KeyCode.D) && playerPosition < posCarriles[1])
+        {
+            transform.Translate(movementDistance, 0, 0);
+        }
+        else if (Input.GetKeyDown(KeyCode.A) && playerPosition > posCarriles[0])
+        {
+            transform.Translate(-movementDistance, 0, 0);
+        }
+    }
+
+    private void HandleFreeMovement()
+    {
+        float horizontalInput = Input.GetAxis("Horizontal");
+        transform.Translate(Vector3.right * speed * horizontalInput * Time.deltaTime);
+        ClampPosition();
+
+        if (puedeVolar)
+        {
+            float verticalInput = Input.GetAxis("Vertical");
+            transform.Translate(Vector2.up * speed * verticalInput * Time.deltaTime);
+            ClampPosition(true);
+        }
+    }
+
+    private void ClampPosition(bool vertical = false)
+    {
+        float clampedX = Mathf.Clamp(transform.position.x, -limitX, limitX);
+        float clampedY = vertical ? Mathf.Clamp(transform.position.y, limitY, 0) : transform.position.y;
+        transform.position = new Vector3(clampedX, clampedY, transform.position.z);
+    }
+
+    private void OnTriggerEnter(Collider obj)
+    {
+        Debug.Log("Choqué con algo y su tag es: " + obj.gameObject.tag);
+    }
+
+    public void Damage(int _dmg)
+    {
+        if (inmunity) return;
+
+        life = Mathf.Max(life - _dmg, 0);
+        config.vidas = life;
+
+        if (life <= 0)
+        {
+            config.perdiste = true;
+            Destroy(gameObject);
+        }
+    }
+
+    private void Shoot()
+    {
+        if (Input.GetKeyDown(KeyCode.Return) && canShoot)
+        {
+            StartCoroutine(ShootDelay());
+            Vector3 bulletPosition = Configuracion_General.runner3D
+                ? new Vector3(transform.position.x, -1f, transform.position.z)
+                : new Vector3(transform.position.x, transform.position.y + 1, 0);
+            Instantiate(bullets[bulletType], bulletPosition, Quaternion.identity);
+        }
+    }
+
+    private IEnumerator ShootDelay()
+    {
+        canShoot = false;
+        yield return new WaitForSeconds(fireRate);
+        canShoot = true;
+    }
+
+    public void moveOSC(float _x)
+    {
+        transform.Translate(Vector3.right * speed * _x * Time.deltaTime);
+        ClampPosition();
+    }
+}
