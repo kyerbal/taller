@@ -13,7 +13,7 @@ public class Player : MonoBehaviour
     public float playerPosition;
     [SerializeField] private float limitY = -3.5f;
     [SerializeField] private float limitX = 8.10f;
-    [HideInInspector] public float speed = 8;
+    [HideInInspector] public float speed = 4;
     [SerializeField] private bool puedeVolar = false;
 
     [Header("Configuración de vida")]
@@ -104,7 +104,53 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter(Collider obj)
     {
-        Debug.Log("Choqué con algo y su tag es: " + obj.gameObject.tag);
+        switch (obj.gameObject.tag)
+        {
+            case "Basura":
+                Damage(1);
+                break;
+            case "BasuraRadioactiva":
+                Damage(2);
+                break;
+            case "MuroDeBasura":
+                ActivateSyncMoment();
+                break;
+            case "BoostVelocidad":
+                speed *= 1.5f;
+                break;
+            case "Borde":
+                speed -= speed / 15f;
+                break;
+            case "BoostVida":
+                life = Mathf.Min(life + 1, config.maxVidas);
+                config.vidas = life;
+                break;
+        }
+    }
+
+    private void ActivateSyncMoment()
+    {
+        bool syncSuccess = PerformSyncMoment();
+        if (!syncSuccess)
+        {
+            config.perdiste = true;
+            Destroy(gameObject);
+        }
+    }
+
+    private bool PerformSyncMoment()
+    {
+        // Código para coordinar con el compañero, podría implicar un mini-juego o lógica sincronizada con otro jugador.
+        // En este ejemplo simple, verificamos si se presionan las teclas A, S, D o W en el mismo orden con el compañero.
+        string[] expectedKeys = { "A", "S", "D", "W" };
+        foreach (string key in expectedKeys)
+        {
+            if (!Input.GetKeyDown((KeyCode)System.Enum.Parse(typeof(KeyCode), key)))
+            {
+                return false; // Falla si la secuencia no es correcta.
+            }
+        }
+        return true; // Éxito si se sigue correctamente la secuencia.
     }
 
     public void Damage(int _dmg)
@@ -146,3 +192,4 @@ public class Player : MonoBehaviour
         ClampPosition();
     }
 }
+
