@@ -1,0 +1,52 @@
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class MetaController : MonoBehaviour
+{
+    [SerializeField] private Configuracion_General config;
+
+    private void OnTriggerEnter(Collider other)
+    {
+        // Comprobamos si el objeto que colisionó tiene el tag "Player"
+        if (other.gameObject.CompareTag("Player"))
+        {
+            // Marcar que el jugador ha ganado
+            config.ganaste = true;
+
+            // Mostrar mensaje en consola (opcional)
+            Debug.Log("¡Has ganado el nivel!");
+
+            // Cargar el siguiente nivel automáticamente
+            CargarSiguienteNivel();
+        }
+    }
+
+    private void CargarSiguienteNivel()
+    {
+        // Obtener el nombre de la escena actual
+        string escenaActual = SceneManager.GetActiveScene().name;
+        string siguienteEscena = "";
+
+        // Definir la siguiente escena basándonos en la escena actual
+        if (escenaActual == "level1")
+        {
+            siguienteEscena = "level2";  // Si estamos en level1, cargar level2
+        }
+        else if (escenaActual == "level2")
+        {
+            siguienteEscena = "level3";  // Si estamos en level2, cargar level3
+        }
+        else if (escenaActual == "level3")
+        {
+            // Aquí puedes añadir una lógica para lo que sucede cuando terminas el último nivel
+            Debug.Log("¡Has completado todos los niveles!");
+            return;  // No hacer nada si no hay un siguiente nivel
+        }
+
+        // Si hemos determinado una escena siguiente, cargarla
+        if (!string.IsNullOrEmpty(siguienteEscena))
+        {
+            SceneManager.LoadScene(siguienteEscena);
+        }
+    }
+}
